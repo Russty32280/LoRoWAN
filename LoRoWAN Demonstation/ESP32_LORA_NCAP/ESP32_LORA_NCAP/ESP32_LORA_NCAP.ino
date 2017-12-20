@@ -8,6 +8,8 @@
 #include <WiFi.h>
 #include <AWS_IOT.h>
 
+#include <ArduinoJson.h>
+
 #define SERVER_ADDRESS 2 // This is the permenent address of the server within our network. This needs to be changed to reflect our actual choice in address
 #define REGISTRATION_ADDRESS 0 // All new Transducer Nodes must start by sending their connection message to Address 0
 
@@ -36,6 +38,7 @@ int status = WL_IDLE_STATUS;
 int tick=0,msgCount=0,msgReceived = 0;
 char payload[512];
 char rcvdPayload[512];
+
 
 
 //=============================
@@ -84,6 +87,34 @@ void setup() {
     manager.setTimeout(1000);
     Serial.println("Passed Init");
 
+    /*************************
+    * Example JSON to AWS
+    **************************/
+
+    StaticJsonBuffer<200> jsonBuffer;
+
+    JsonObject& root = jsonBuffer.createObject();
+    root["NNID"] = "1";
+    root["TNID"] = "1";
+    root["ChanID"] = "1";
+    root["Data"] = "1";
+    root["temp"] = "85";
+  
+    root.printTo(payload, sizeof(payload));
+
+     if(hornbill.publish(TOPIC_NAME,payload) == 0)   // Publish the message(Temp and humidity)
+        {        
+            Serial.print("Publish Message:");   
+            Serial.println(payload);
+        }
+        else
+        {
+            Serial.println("Publish failed");
+        }
+           
+
+    
+
 }
 
 uint8_t data[] = "9";
@@ -114,7 +145,10 @@ void loop() {
         Serial.println("Got something");
         Serial.println(from);
         for (int i = 0; i<len; i++)
+        {
           Serial.println(buf[i]);
+          payload[i] = (char)(buf[i]%30)+'0';
+        }
       }
       IsSending = true;
   }
@@ -157,7 +191,7 @@ void loop() {
       //  sprintf(payload, "sendtoWait failed");
       //}
 
-     /* 
+     
      if(hornbill.publish(TOPIC_NAME,payload) == 0)   // Publish the message(Temp and humidity)
         {        
             Serial.print("Publish Message:");   
@@ -167,7 +201,7 @@ void loop() {
         {
             Serial.println("Publish failed");
         }
-        */
+       
     //}
     delay(1000);
   }
