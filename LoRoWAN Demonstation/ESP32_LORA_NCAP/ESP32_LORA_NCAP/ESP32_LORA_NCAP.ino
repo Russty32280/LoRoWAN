@@ -77,6 +77,7 @@ void setup() {
 
     driver.setTxPower(23, false);
     driver.setModemConfig(RH_RF95::ModemConfigChoice::Bw500Cr45Sf128);
+    driver.setFrequency(915.0);
     manager.setTimeout(1000);
     Serial.println("Passed Init");
 
