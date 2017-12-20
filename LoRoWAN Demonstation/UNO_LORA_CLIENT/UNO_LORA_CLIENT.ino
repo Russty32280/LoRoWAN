@@ -60,56 +60,72 @@ void setup()
 uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
 uint8_t isFirstRun = 1;
 uint16_t temp;
-uint8_t data[2];
+uint8_t data[8];
+uint16_t SensorData = 0;  // Fake Sensor Data
+uint8_t TNID0 = 0x00; // Transducer Node ID Low Byte
+uint8_t TNID1 = 0x01; // Transducer Node ID High Byte
+
 
 void loop()
 {
+  uint8_t len = sizeof(buf);
+  uint8_t from;  
+  if (manager.recvfromAck(buf, &len, &from))
+  {
+    for(int i = 0; i<len; i++)
+      Serial.println(buf[i]);
+    if ((buf[1] == 0x01) && (buf[0] == 0x00)) 
+    {
+      SensorData++;
+      data[0] = 0x00;   // Set first byte of data to be sent as the FuncID High Byte  
+      data[1] = 0x01;   // Set Second byte to FuncID Low Byte
+      data[2] = from;   // Next, the Network Node ID which requested the data
+      data[3] = TNID0;  // Transducer Node High Byte
+      data[4] = TNID1;  // Transducer Node Low Byte
+      data[5] = buf[5];  // Channel ID High
+      data[6] = buf[6];   //  Channel ID Low
+      data[7] = SensorData; // Just the incremented value
+      Serial.println("Sending to rf95_reliable_datagram_server");
+      if (!manager.sendtoWait(data, sizeof(data), from))
+      {
+        Serial.println("Send to wait failed");
+      }
+    }
+  }
 
-  data[0] = 'L';
-  temp = analogRead(0);
-  if(temp > 255) temp = 255;
-  data[1] = (uint8_t) temp;
-  Serial.print("Data:");
-  Serial.println(data[1]);
+
+
+  //data[0] = 'L';
+  //temp = analogRead(0);
+  //if(temp > 255) temp = 255;
+  //data[1] = (uint8_t) temp;
+  //Serial.print("Data:");
+  //Serial.println(data[1]);
   
-  Serial.println("Sending to rf95_reliable_datagram_server");
+  
     
   // Send a message to manager_server
-  if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
-  {
+  //if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
+  //{
     
     
     // Now wait for a reply from the server
-    uint8_t len = sizeof(buf);
-    uint8_t from;   
-    if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
-    {
-      Serial.print("got reply from : 0x");
-      Serial.print(from, HEX);
-      Serial.print(": ");
-      Serial.println((char*)buf);
-
-//    if(isFirstRun){
-//      Serial.println("First Run");
-//      CLIENT_ADDRESS = ((uint8_t)*buf) - 48;
-//      Serial.println(*buf);
-//      
-//      manager.setThisAddress(CLIENT_ADDRESS);
-//      isFirstRun = 0;
-//      Serial.println(CLIENT_ADDRESS);
-//    }
-
-      
-      
-      
-    }
-    else
-    {
-      Serial.println("No reply, is rf95_reliable_datagram_server running?");
-    }
-  }
-  else
-    Serial.println("sendtoWait failed");
+  //  uint8_t len = sizeof(buf);
+  //  uint8_t from;   
+  //  if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
+  //  {
+  //    Serial.print("got reply from : 0x");
+  //    Serial.print(from, HEX);
+  //    Serial.print(": ");
+  //    Serial.println((char*)buf); 
+  //  }
+  //  else
+  //  {
+  //    Serial.println("No reply, is rf95_reliable_datagram_server running?");
+  //  }
+  //}
+  //else
+  //  Serial.println("sendtoWait failed");
   delay(50);
 }
 

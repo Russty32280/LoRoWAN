@@ -28,7 +28,7 @@ AWS_IOT hornbill;   // AWS_IOT instance
 
 char WIFI_SSID[]="Rowan_IOT";
 char WIFI_PASSWORD[]="";
-char HOST_ADDRESS[]="a213qaaw8pshxz.iot.us-east-2.amazonaws.com";
+char HOST_ADDRESS[]="a213qaaw8pshxz.iot.us-east-1.amazonaws.com";
 char CLIENT_ID[]= "LoRoWANESP32";
 char TOPIC_NAME[]= "NetworkNode1/General";
 
@@ -49,6 +49,7 @@ void setup() {
     Serial.begin(115200); // Initialize UART to 115200 Baud
     delay(2000);
 
+    
     while (status != WL_CONNECTED)
     {
         Serial.print("Attempting to connect to SSID: ");
@@ -71,6 +72,8 @@ void setup() {
     }
 
     delay(2000);
+    
+
 
     if (!manager.init())
     Serial.println("init failed");
@@ -86,13 +89,41 @@ void setup() {
 uint8_t data[] = "9";
 uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
 
+bool IsSending = true;
 
 void loop() {
-  if (manager.available())
-  {
-    // Wait for a message addressed to us from the client
     uint8_t len = sizeof(buf);
     uint8_t from;
+    if (IsSending)
+    {
+      data[0] = 0x00;
+      data[1] = 0x01; 
+      Serial.println("Sending Data");
+      if (!manager.sendtoWait(data, sizeof(data), 1))
+      {
+        Serial.println("sendtoWait failed");
+        sprintf(payload, "sendtoWait failed");
+      }
+      else
+        IsSending = false;
+    }
+  else
+  {
+      if (manager.recvfromAck(buf, &len, &from))
+      {
+        Serial.println("Got something");
+        Serial.println(from);
+        for (int i = 0; i<len; i++)
+          Serial.println(buf[i]);
+      }
+      IsSending = true;
+  }
+  //if (manager.available())
+  //{
+    // Wait for a message addressed to us from the client
+    //uint8_t len = sizeof(buf);
+    //uint8_t from;
+    /*
     if (manager.recvfromAck(buf, &len, &from))
     {
       if (from == REGISTRATION_ADDRESS)
@@ -116,14 +147,17 @@ void loop() {
         sprintf(payload, "Got a request from some other device");
       }
       // Send a reply back to the originator client
-      
-      if (!manager.sendtoWait(data, sizeof(data), from))
-      {
-        Serial.println("sendtoWait failed");
-        sprintf(payload, "sendtoWait failed");
-      }
+      */
+      //data[0] = 0x00;
+      //data[1] = 0x01; 
+      //Serial.println("Sending Data");
+      //if (!manager.sendtoWait(data, sizeof(data), from))
+      //{
+      //  Serial.println("sendtoWait failed");
+      //  sprintf(payload, "sendtoWait failed");
+      //}
 
-      
+     /* 
      if(hornbill.publish(TOPIC_NAME,payload) == 0)   // Publish the message(Temp and humidity)
         {        
             Serial.print("Publish Message:");   
@@ -133,7 +167,7 @@ void loop() {
         {
             Serial.println("Publish failed");
         }
-    }
+        */
+    //}
+    delay(1000);
   }
-
-}
